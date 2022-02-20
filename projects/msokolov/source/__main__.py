@@ -1,11 +1,33 @@
 import sys
 import csv
-
-from source.tokenizer import (Tokenizer, Token)
-
 import nltk
+
 from nltk import SnowballStemmer, WordNetLemmatizer
-from nltk.tag import pos_tag
+from pathlib import Path
+from dataclasses import dataclass, field
+
+from source.tokenizer import Tokenizer, Token
+
+
+@dataclass
+class Record:
+    label: str
+    title_tokens: [Token] = field(default_factory=list)
+    text_tokens: [Token] = field(default_factory=list)
+
+    def lemmatize(self, lemmatizer: WordNetLemmatizer):
+        for token in self.title_tokens:
+            token.lemma = lemmatizer.lemmatize(token.text)
+
+        for token in self.text_tokens:
+            token.lemma = lemmatizer.lemmatize(token.text)
+
+    def stem(self, stemmer: SnowballStemmer):
+        for token in self.title_tokens:
+            token.stemma = stemmer.stem(token.text)
+
+        for token in self.text_tokens:
+            token.stemma = stemmer.stem(token.text)
 
 
 def init_ntlk():
@@ -15,57 +37,64 @@ def init_ntlk():
     nltk.download('universal_tagset')
 
 
-def lemmatize(tokens: [Token]):
+def lemmatize(records: [Record]):
     lemmatizer = WordNetLemmatizer()
-    result = []
-    for token in tokens:
-        lemma = lemmatizer.lemmatize(token.text)
-        result.append(lemma)
-    # tokens_text = list(map(lambda token: token.text, tokens))
-    # tokens_tags = pos_tag(tokens_text, 'universal')
-    # return tokens_tags
-    return result
+    for record in records:
+        record.lemmatize(lemmatizer)
 
 
-def stem(tokens: [Token]):
+def stem(records: [Record]):
     stemmer = SnowballStemmer("english")
-    result = []
-    for token in tokens:
-        stemma = stemmer.stem(token.text)
-        result.append(stemma)
-
-    return result
+    for record in records:
+        record.stem(stemmer)
 
 
 def read_from_file(path: str):
-    text = ""
+    tokenizer = Tokenizer()
+    result = []
     with open(path) as file:
         reader = csv.reader(file)
         for row in reader:
-            text = text + ', '.join(row)
+            label = row[0]
+            title_tokens = tokenizer.tokenize(row[1])
+            text_tokens = tokenizer.tokenize(row[2])
+            result.append(Record(label, title_tokens, text_tokens))
 
-    return text
-
-
-def write_to_file(path: str, tokens: [Token], lemmas: [str], stemmas: [str]):
-    with open(path, 'w', newline='') as file:
-        writer = csv.writer(file, delimiter='\t')
-        for (token, lemma, stemma) in zip(tokens, lemmas, stemmas):
-            writer.writerow([token.text, lemma, stemma])
+    return result
 
 
-def main(path: str):
+def write_to_file(path: str, records: [Record]):
+    last_indexes = {}
+    for record in records:
+        label: str = record.label
+
+        folder = f"{path}/{label}"
+        Path(folder).mkdir(parents=True, exist_ok=True)
+
+        last_index = last_indexes.get(label, 0)
+        if last_index == 0:
+            last_indexes[label] = 1
+        else:
+            last_indexes[label] = last_index + 1
+
+        with open(f"{folder}/{last_index}.tsv", 'w', newline='') as file:
+            writer = csv.writer(file, delimiter='\t')
+
+            for token in record.title_tokens:
+                writer.writerow([token.text, token.lemma, token.stemma])
+
+            for token in record.text_tokens:
+                writer.writerow([token.text, token.lemma, token.stemma])
+
+
+def main(in_path: str, out_path: str):
     init_ntlk()
 
-    text = read_from_file(path)
-    tokenizer = Tokenizer()
-
-    tokens = tokenizer.tokenize(text)
-    lemmas = lemmatize(tokens)
-    stemmas = stem(tokens)
-
-    write_to_file("/home/naymoll/Downloads/result.csv", tokens, lemmas, stemmas)
+    records = read_from_file(in_path)
+    lemmatize(records)
+    stem(records)
+    write_to_file(out_path, records)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2])

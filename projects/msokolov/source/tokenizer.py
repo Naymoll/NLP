@@ -1,13 +1,5 @@
 import re
 from dataclasses import dataclass
-from enum import Enum
-
-
-class Tag(Enum):
-    Undefined = 0
-    Value = 1
-    Punc = 2
-    Word = 3
 
 
 @dataclass(frozen=True)
@@ -16,11 +8,12 @@ class Span:
     end: int
 
 
-@dataclass(frozen=True)
+@dataclass
 class Token:
     text: str
     span: Span
-    tag: Tag
+    lemma: str = ""
+    stemma: str = ""
 
 
 class Tokenizer:
@@ -42,17 +35,8 @@ class Tokenizer:
     def tokenize(self, text: str):
         result = []
         for match in self.__regex.finditer(text):
-            tag = Tag.Undefined
-            match match.groups():
-                case (_, None, None):
-                    tag = Tag.Value
-                case (None, _, None):
-                    tag = Tag.Punc
-                case (None, None, _):
-                    tag = Tag.Word
-
             span = Span(match.start(), match.end())
-            token = Token(match.group(), span, tag)
+            token = Token(match.group(), span)
             result.append(token)
 
         return result
