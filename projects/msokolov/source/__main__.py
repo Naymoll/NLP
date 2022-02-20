@@ -72,10 +72,7 @@ def write_to_file(path: str, records: [Record]):
         Path(folder).mkdir(parents=True, exist_ok=True)
 
         last_index = last_indexes.get(label, 0)
-        if last_index == 0:
-            last_indexes[label] = 1
-        else:
-            last_indexes[label] = last_index + 1
+        last_indexes[label] = last_index + 1
 
         with open(f"{folder}/{last_index}.tsv", 'w', newline='') as file:
             writer = csv.writer(file, delimiter='\t')
