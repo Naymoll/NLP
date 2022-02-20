@@ -18,16 +18,20 @@ class Token:
 
 class Tokenizer:
     def __init__(self):
-        times_format = r"(\d{1,2}:\d{2}(?:\s?PM|AM|pm|am)?)|(\d\s?(?:PM|AM|pm|am))"  # TODO: Доработать
-        values_format = r"(\d+(?:,|\.)?\d*)"
-        # punc_format = r"([^a-zA-Z\d\s])"
-        punc_format = r"([\.,;!])"
-        words_format = r"([a-zA-Z]+)"
+        times_format = r"((\d{1,2}(?::\d{1,2})? ?(?:PM|AM|pm|am|p\.m\.|a\.m\.))|(\d{1,2}:\d{2}(?:PM|AM|pm|am|p\.m\.|a\.m\.)?))"
+        values_format = r"((\d+[,\.]\d+)|(\d+))"
+        words_format = r"([a-zA-Z]+(?:'[a-zA-z]{1,})?)"
+        url = r"((?:http(?:s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+)" # Работает неважно
+        phone_number = r"([(]?\d{3}[)]?[\s-]\d{3}-\d{4})"
+        others_format = r"([^a-zA-Z\d\s])"
 
         regex_formats = [
+            url,
+            phone_number,
+            times_format,
             values_format,
-            punc_format,
             words_format,
+            others_format,
         ]
 
         self.__regex = re.compile(r"|".join(regex_formats))
