@@ -18,11 +18,11 @@ class Token:
 
 class Tokenizer:
     def __init__(self):
-        times_format = r"((\d{1,2}(?::\d{1,2})? ?(?:PM|AM|pm|am|p\.m\.|a\.m\.))|(\d{1,2}:\d{2}(?:PM|AM|pm|am|p\.m\.|a\.m\.)?))"
+        times_format = r"((\d{1,2}(?::\d{1,2})? ?(?:PM|AM|pm|am|p\.m\.|a\.m\.))|(\d{1,2}:\d{2}(?:PM|AM|pm|am|p\.m\.|a\.m\.)?))" # Парсит 25:35 как корректное время
         values_format = r"((\d+[,\.]\d+)|(\d+))"
+        phone_number = r"((?:(?:\(\d{3}\))|(?:\d{3}))[\s-]\d{3}-\d{4})"
         words_format = r"([a-zA-Z]+(?:'[a-zA-z]{1,})?)"
         url = r"((?:http(?:s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+)" # Работает неважно
-        phone_number = r"([(]?\d{3}[)]?[\s-]\d{3}-\d{4})"
         others_format = r"([^a-zA-Z\d\s])"
 
         regex_formats = [
