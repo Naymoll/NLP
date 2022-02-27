@@ -26,7 +26,7 @@ class Tokenizer:
         values_format = r"((\d+[,\.]\d+)|(\d+))"
         phone_number = r"((?:(?:\(\d{3}\))|(?:\d{3}))[\s-]\d{3}-\d{4})"
         words_format = r"([a-zA-Z]+(?:'[a-zA-z]{1,})?)"
-        url = r"((?:https?:\/\/)?(?:www\.)?\w+(?:\.\w+)*\.(?:com|COM|net|NET|org|ORG)(?:\/.*?(?=\s))?)"
+        url = r"((?:https?:\/\/)?(?:www\.)?\w+(?:\.\w+)*\.(?:com|COM|net|NET|org|ORG)(?:\/.*?(?=\s|$))?)"
         meta = r"(&lt;.*?&gt;)|(#.*?;)"
         abbrev_format = r"((?:(?<=\s)|(?<=^))(?:[a-zA-Z]\.)+)"
         others_format = r"([^a-zA-Z\d\s])"
@@ -51,9 +51,6 @@ class Tokenizer:
     def tokenize(self, text: str):
         result = []
         for match in self.__regex.finditer(text):
-            if match.group(1) or match.group(2):
-                continue  # Игнорируем мета-токены
-
             span = Span(match.start(), match.end())
             token = Token(match.group(), span)
             result.append(token)
