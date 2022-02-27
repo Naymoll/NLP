@@ -80,7 +80,7 @@ def write_to_file(path: str, records: [Record]):
             for token in record.title_tokens:
                 writer.writerow([token.text, token.lemma, token.stemma])
 
-            writer.writerow(['\n'])
+            writer.writerow('')
 
             for token in record.text_tokens:
                 writer.writerow([token.text, token.lemma, token.stemma])
