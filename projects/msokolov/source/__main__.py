@@ -1,33 +1,78 @@
+import re
 import sys
 import csv
 import nltk
 
 from nltk import SnowballStemmer, WordNetLemmatizer
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from source.tokenizer import Tokenizer, Token
 
+abbrs = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "June",
+    "July",
+    "Aug",
+    "Sept",
+    "Oct",
+    "Nov",
+    "Dec",
+    "Mon",
+    "Mo",
+    "Tue",
+    "Tu",
+    "Wed",
+    "We",
+    "Thu",
+    "Th",
+    "Fri",
+    "Fr",
+    "Sat",
+    "Sa",
+    "Sun",
+    "Su",
+    "vs",
+    "VS",
+    "Vs",
+    "St",
+    "ST",
+    "Corp",
+    "Inc",
+    "Co",
+    "Ltd",
+    "Mr",
+    "Mrs",
+    "No",
+    "Govt",
+    "Gov",
+    "Ark",
+    "Mass",
+    "Col",
+    "Sgt",
+    "Md",
+    "Rep",
+    "Rev",
+    "Gen",
+    "Sen",
+    "Eq",
+    "Dr",
+    "Sep",
+    "ept",
+    "Tues",
+    "Cos",
+    "Va",
+    "Wis",
+    "Ga",
+    "[A-Z]",
+]
 
-@dataclass
-class Record:
-    label: str
-    title_tokens: [Token] = field(default_factory=list)
-    text_tokens: [Token] = field(default_factory=list)
-
-    def lemmatize(self, lemmatizer: WordNetLemmatizer):
-        for token in self.title_tokens:
-            token.lemma = lemmatizer.lemmatize(token.text)
-
-        for token in self.text_tokens:
-            token.lemma = lemmatizer.lemmatize(token.text)
-
-    def stem(self, stemmer: SnowballStemmer):
-        for token in self.title_tokens:
-            token.stemma = stemmer.stem(token.text)
-
-        for token in self.text_tokens:
-            token.stemma = stemmer.stem(token.text)
+abbrs_neg_lookbehind_pattern = "".join(map(lambda s: rf"(?<!{s}\.)", abbrs))
+sentence_reg = re.compile(rf"(?:{abbrs_neg_lookbehind_pattern})(?<=[\.!?])\s(?=[A-Z\d])")
 
 
 def init_ntlk():
@@ -37,30 +82,58 @@ def init_ntlk():
     nltk.download('universal_tagset')
 
 
-def lemmatize(records: [Record]):
-    lemmatizer = WordNetLemmatizer()
-    for record in records:
-        record.lemmatize(lemmatizer)
+@dataclass
+class Sentence:
+    tokens: [Token]
 
 
-def stem(records: [Record]):
-    stemmer = SnowballStemmer("english")
-    for record in records:
-        record.stem(stemmer)
+@dataclass
+class Record:
+    label: str
+    sentences: [Sentence]
+
+    def lemmatize(self, lemmatizer: WordNetLemmatizer):
+        for sentence in self.sentences:
+            for token in sentence.tokens:
+                token.lemma = lemmatizer.lemmatize(token.text)
+
+    def stem(self, stemmer: SnowballStemmer):
+        for sentence in self.sentences:
+            for token in sentence.tokens:
+                token.stemma = stemmer.stem(token.text)
+
+
+def split_to_sentences(text: str):
+    result = []
+    tokenizer = Tokenizer()
+    for sentence in sentence_reg.split(text):
+        tokens = tokenizer.tokenize(sentence)
+        result.append(Sentence(tokens))
+
+    return result
 
 
 def read_from_file(path: str):
-    tokenizer = Tokenizer()
-    result = []
+    records = []
     with open(path) as file:
         reader = csv.reader(file)
-        for row in reader:
-            label = row[0]
-            title_tokens = tokenizer.tokenize(row[1])
-            text_tokens = tokenizer.tokenize(row[2])
-            result.append(Record(label, title_tokens, text_tokens))
+        for [label, title, text] in reader:
+            sentences = []
+            title_sentences = split_to_sentences(title)
+            sentences.extend(title_sentences)
 
-    return result
+            text_sentences = split_to_sentences(text)
+            sentences.extend(text_sentences)
+
+            records.append(Record(label, sentences))
+
+    lemmatizer = WordNetLemmatizer()
+    stemmer = SnowballStemmer("english")
+    for record in records:
+        record.lemmatize(lemmatizer)
+        record.stem(stemmer)
+
+    return records
 
 
 def write_to_file(path: str, records: [Record]):
@@ -75,23 +148,18 @@ def write_to_file(path: str, records: [Record]):
         last_indexes[label] = last_index + 1
 
         with open(f"{folder}/{last_index}.tsv", 'w', newline='') as file:
-            writer = csv.writer(file, delimiter='\t')
+            writer = csv.writer(file, delimiter='\t', dialect='excel-tab')
 
-            for token in record.title_tokens:
-                writer.writerow([token.text, token.lemma, token.stemma])
-
-            writer.writerow('')
-
-            for token in record.text_tokens:
-                writer.writerow([token.text, token.lemma, token.stemma])
+            for sentence in record.sentences:
+                for token in sentence.tokens:
+                    writer.writerow([token.text, token.lemma, token.stemma])
+                writer.writerow('')
 
 
 def main(in_path: str, out_path: str):
     init_ntlk()
 
     records = read_from_file(in_path)
-    lemmatize(records)
-    stem(records)
     write_to_file(out_path, records)
 
 
