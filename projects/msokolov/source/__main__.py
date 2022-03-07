@@ -5,74 +5,12 @@ import nltk
 
 from nltk import SnowballStemmer, WordNetLemmatizer
 from pathlib import Path
-from dataclasses import dataclass
 
-from source.tokenizer import Tokenizer, Token
+from source.record import Sentence, Record
+from source.tokenizer import Tokenizer
+from patterns import abbrs_neg_lookbehind_pattern
 
-abbrs = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "June",
-    "July",
-    "Aug",
-    "Sept",
-    "Oct",
-    "Nov",
-    "Dec",
-    "Mon",
-    "Mo",
-    "Tue",
-    "Tu",
-    "Wed",
-    "We",
-    "Thu",
-    "Th",
-    "Fri",
-    "Fr",
-    "Sat",
-    "Sa",
-    "Sun",
-    "Su",
-    "vs",
-    "VS",
-    "Vs",
-    "St",
-    "ST",
-    "Corp",
-    "Inc",
-    "Co",
-    "Ltd",
-    "Mr",
-    "Mrs",
-    "No",
-    "Govt",
-    "Gov",
-    "Ark",
-    "Mass",
-    "Col",
-    "Sgt",
-    "Md",
-    "Rep",
-    "Rev",
-    "Gen",
-    "Sen",
-    "Eq",
-    "Dr",
-    "Sep",
-    "ept",
-    "Tues",
-    "Cos",
-    "Va",
-    "Wis",
-    "Ga",
-    "[A-Z]",
-]
-
-abbrs_neg_lookbehind_pattern = "".join(map(lambda s: rf"(?<!{s}\.)", abbrs))
-sentence_reg = re.compile(rf"(?:{abbrs_neg_lookbehind_pattern})(?<=[\.!?])\s(?=[A-Z\d])")
+sentence_regex = re.compile(rf"(?:{abbrs_neg_lookbehind_pattern}(?<![A-Z]\.))(?<=[\.!?])\s(?=[A-Z\d])")
 
 
 def init_ntlk():
@@ -82,38 +20,17 @@ def init_ntlk():
     nltk.download('universal_tagset')
 
 
-@dataclass
-class Sentence:
-    tokens: [Token]
-
-
-@dataclass
-class Record:
-    label: str
-    sentences: [Sentence]
-
-    def lemmatize(self, lemmatizer: WordNetLemmatizer):
-        for sentence in self.sentences:
-            for token in sentence.tokens:
-                token.lemma = lemmatizer.lemmatize(token.text)
-
-    def stem(self, stemmer: SnowballStemmer):
-        for sentence in self.sentences:
-            for token in sentence.tokens:
-                token.stemma = stemmer.stem(token.text)
-
-
 def split_to_sentences(text: str):
     result = []
     tokenizer = Tokenizer()
-    for sentence in sentence_reg.split(text):
+    for sentence in sentence_regex.split(text):
         tokens = tokenizer.tokenize(sentence)
         result.append(Sentence(tokens))
 
     return result
 
 
-def read_from_file(path: str):
+def read_records(path: str):
     records = []
     with open(path) as file:
         reader = csv.reader(file)
@@ -136,7 +53,7 @@ def read_from_file(path: str):
     return records
 
 
-def write_to_file(path: str, records: [Record]):
+def write_records(path: str, records: [Record]):
     last_indexes = {}
     for record in records:
         label: str = record.label
@@ -159,8 +76,8 @@ def write_to_file(path: str, records: [Record]):
 def main(in_path: str, out_path: str):
     init_ntlk()
 
-    records = read_from_file(in_path)
-    write_to_file(out_path, records)
+    records = read_records(in_path)
+    write_records(out_path, records)
 
 
 if __name__ == "__main__":
