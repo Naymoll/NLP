@@ -10,7 +10,9 @@ from source.record import Sentence, Record
 from source.tokenizer import Tokenizer
 from patterns import abbrs_neg_lookbehind_pattern
 
+
 sentence_regex = re.compile(rf"(?:{abbrs_neg_lookbehind_pattern}(?<![A-Z]\.))(?<=[\.!?])\s(?=[A-Z\d])")
+tokenizer = Tokenizer()
 
 
 def init_ntlk():
@@ -21,13 +23,7 @@ def init_ntlk():
 
 
 def split_to_sentences(text: str):
-    result = []
-    tokenizer = Tokenizer()
-    for sentence in sentence_regex.split(text):
-        tokens = tokenizer.tokenize(sentence)
-        result.append(Sentence(tokens))
-
-    return result
+    return list(map(lambda s: Sentence(tokenizer.tokenize(s)), sentence_regex.split(text)))
 
 
 def read_records(path: str):
@@ -44,13 +40,15 @@ def read_records(path: str):
 
             records.append(Record(label, sentences))
 
+    return records
+
+
+def lemmatize_and_stem(records: [Record]):
     lemmatizer = WordNetLemmatizer()
     stemmer = SnowballStemmer("english")
     for record in records:
         record.lemmatize(lemmatizer)
         record.stem(stemmer)
-
-    return records
 
 
 def write_records(path: str, records: [Record]):
@@ -77,6 +75,7 @@ def main(in_path: str, out_path: str):
     init_ntlk()
 
     records = read_records(in_path)
+    lemmatize_and_stem(records)
     write_records(out_path, records)
 
 
