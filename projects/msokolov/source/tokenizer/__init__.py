@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from patterns import *
+from source.tokenizer.patterns import *
 
 
 @dataclass

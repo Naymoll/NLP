@@ -6,10 +6,9 @@ import nltk
 from nltk import SnowballStemmer, WordNetLemmatizer
 from pathlib import Path
 
-from source.record import Sentence, Record
 from source.tokenizer import Tokenizer
+from record import Sentence, Record
 from patterns import abbrs_neg_lookbehind_pattern
-
 
 sentence_regex = re.compile(rf"(?:{abbrs_neg_lookbehind_pattern}(?<![A-Z]\.))(?<=[\.!?])\s(?=[A-Z\d])")
 tokenizer = Tokenizer()
@@ -71,11 +70,25 @@ def write_records(path: str, records: [Record]):
                 writer.writerow('')
 
 
+def create_dict(records: [Record]):
+    tokens = set()
+    for record in records:
+        for sentence in record.sentences:
+            for token in sentence.tokens:
+                if token.text not in tokens:
+                    tokens.add(token.text)
+
+    with open(r"../../assets/dictionary.csv", 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(map(lambda t: [t], tokens))
+
+
 def main(in_path: str, out_path: str):
     init_ntlk()
 
     records = read_records(in_path)
     lemmatize_and_stem(records)
+    create_dict(records)
     write_records(out_path, records)
 
 
