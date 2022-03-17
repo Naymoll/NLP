@@ -38,20 +38,19 @@ def tokenize_from_files(ok_path: str, err_path):
     tokenizer = Tokenizer()
     ok_tokens = []
     err_tokens = []
-    with open(ok_path) as ok_file:
-        with open(err_path) as err_file:
-            ok_reader = csv.reader(ok_file)
-            err_reader = csv.reader(err_file)
-            for ok_record, err_record in zip(ok_reader, err_reader):
-                ok_record_tokens = tokenize_record(tokenizer, ok_record)
-                err_record_tokens = tokenize_record(tokenizer, err_record)
-                if len(ok_record_tokens) != len(err_record_tokens):
-                    continue
+    with open(ok_path) as ok_file, open(err_path) as err_file:
+        ok_reader = csv.reader(ok_file)
+        err_reader = csv.reader(err_file)
+        for ok_record, err_record in zip(ok_reader, err_reader):
+            ok_record_tokens = tokenize_record(tokenizer, ok_record)
+            err_record_tokens = tokenize_record(tokenizer, err_record)
+            if len(ok_record_tokens) != len(err_record_tokens):
+                continue
 
-                ok_tokens.extend(ok_record_tokens)
-                err_tokens.extend(err_record_tokens)
-                if len(ok_tokens) >= DATA_LIMIT:
-                    break
+            ok_tokens.extend(ok_record_tokens)
+            err_tokens.extend(err_record_tokens)
+            if len(ok_tokens) >= DATA_LIMIT:
+                break
 
     return ok_tokens, err_tokens
 
