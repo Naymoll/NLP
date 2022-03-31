@@ -8,9 +8,9 @@ from pathlib import Path
 
 from source.tokenizer import Tokenizer
 from record import Sentence, Record
-from patterns import abbrs_neg_lookbehind_pattern
+from patterns import sentence_pattern
 
-sentence_regex = re.compile(rf"(?:{abbrs_neg_lookbehind_pattern}(?<![A-Z]\.))(?<=[\.!?])\s(?=[A-Z\d])")
+sentence_regex = re.compile(sentence_pattern)
 tokenizer = Tokenizer()
 
 
@@ -22,7 +22,7 @@ def init_ntlk():
 
 
 def split_to_sentences(text: str):
-    return list(map(lambda s: Sentence(tokenizer.tokenize(s)), sentence_regex.split(text)))
+    return list(map(lambda s: Sentence(tokenizer.tokenize(s)), sentence_pattern.split(text)))
 
 
 def read_records(path: str):
