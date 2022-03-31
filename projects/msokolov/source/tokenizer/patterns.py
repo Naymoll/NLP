@@ -60,6 +60,7 @@ abbrs = [
 ]
 
 abbrs_neg_lookbehind_pattern = "".join(map(lambda s: rf"(?<!{s}\.)", abbrs))
+sentence_pattern = rf"(?:{abbrs_neg_lookbehind_pattern}(?<![A-Z]\.))(?<=[\.!?])\s(?=[A-Z\d])"
 
 time_pattern = r"((?:[0-1]?[0-9]|2[0-3]):[0-5][0-9](?::[0-5]\d)?" \
                r"(?:\s?(?:am|a\.m\.|AM|A\.M\.|pm|p\.m\.|PM|P\.M\.))?)" \
