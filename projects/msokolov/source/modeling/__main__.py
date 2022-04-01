@@ -1,20 +1,16 @@
-import os.path
 import sys
 import numpy as np
 import csv
 import matplotlib.colors
 
 import matplotlib.pyplot as plt
-import sklearn.metrics
 
+from source.vectorization import TDMatrix, Vocab
 
-from source.tokenizer import Tokenizer
-from source.vectorization.__main__ import create_term_doc_matrix
-
-from scipy import sparse
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 from sklearn.metrics import r2_score
 
+from source.vectorization.util import read_directory
 
 OUT_PATH = "../../assets/topic-modeling"
 
@@ -54,18 +50,29 @@ def write_doc_topic_distr(doc_topic_distr: np.array, iter: int, topic: int):
         writer.writerows(doc_topic_distr)
 
 
-def read_test_td_matrix(freq_dict: dict[str, int]):
+def read_corpus(dir_path: str):
+    paths = read_directory(dir_path)
+
     corpus = []
-    with open("../../assets/test.csv") as file:
-        reader = csv.reader(file)
+    for path in paths:
+        with open(path) as file:
+            words = []
+            reader = csv.reader(file, delimiter='\t')
+            for record in reader:
+                if not record:
+                    continue
 
-        tokenizer = Tokenizer()
-        for i, [_, _, text] in enumerate(reader):
-            tokens = tokenizer.tokenize(text)
-            tokens_texts = list(map(lambda t: t.text.lower(), tokens))
-            corpus.append(tokens_texts)
+                _, _, stemma = record
+                word = stemma.lower()
+                words.append(word)
+            corpus.append(words)
 
-    return create_term_doc_matrix(corpus, freq_dict)
+    return corpus
+
+
+def read_test_td_matrix(vocab: Vocab):
+    corpus = read_corpus("../../assets/test")
+    return TDMatrix.from_corpus(corpus, vocab)
 
 
 def choose_y(x, y, deg):
@@ -112,17 +119,10 @@ def create_plot():
 
 
 def main(path: str):
-    train_td_matrix = sparse.load_npz(path)
-    freq_dict = read_freq_dict("../../assets/annotated-corpus/freq-dict.csv")
+    train_td_matrix = TDMatrix.load("../../assets/annotated-corpus/td-train-data")
+    test_td_matrix = TDMatrix.load("../../assets/annotated-corpus/td-test-data")
 
-    test_td_matrix_path = "../../assets/test-td-matrix.npz"
-    if os.path.isfile(test_td_matrix_path):
-        test_td_matrix = sparse.load_npz(test_td_matrix_path)
-    else:
-        test_td_matrix = read_test_td_matrix(freq_dict)
-        sparse.save_npz(test_td_matrix_path, test_td_matrix)
-
-    words = list(map(lambda entry: entry[0], freq_dict.items()))
+    words = list(map(lambda entry: entry[0], train_td_matrix.vocab.items()))
 
     topics = [2, 4, 8, 16, 32]
     iters = [2, 4, 8]
@@ -135,19 +135,19 @@ def main(path: str):
                 print(f"Start {iter} iter/{topic} topic")
 
                 lda = LDA(n_components=topic, max_iter=iter, n_jobs=-1)
-                doc_topic_distr = lda.fit_transform(train_td_matrix)
+                doc_topic_distr = lda.fit_transform(train_td_matrix.td_matrix)
                 write_doc_topic_distr(doc_topic_distr, iter, topic)
 
                 top_topics_words = get_top_topics_words(lda, words)
                 write_top_words(top_topics_words, iter, topic)
 
                 print(f"Start calculate perplexity")
-                perplexity = lda.perplexity(test_td_matrix)
+                perplexity = lda.perplexity(test_td_matrix.td_matrix)
                 writer.writerow([iter, topic, perplexity])
 
     create_plot()
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
-    # create_plot()
+    # main(sys.argv[1])
+    create_plot()

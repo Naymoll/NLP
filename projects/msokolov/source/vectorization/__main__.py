@@ -138,6 +138,7 @@ def main():
         distance = cosine_distance(w_vector, r_vector)
         cosines.append(distance)
 
+    print(f"{cosines}")
     print_similarity(model)
     vectorize_test_set(model)
     print("Done!")

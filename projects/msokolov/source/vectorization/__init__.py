@@ -8,7 +8,7 @@ from scipy import sparse
 
 from source.tokenizer import Tokenizer
 from source.tokenizer.patterns import *
-from util import read_forbidden_words
+from source.vectorization.util import read_forbidden_words
 
 
 class Vocab:
