@@ -12,6 +12,8 @@ def read_forbidden_words(path: str):
             if word not in forbidden_words:
                 forbidden_words.add(word)
 
+    return forbidden_words
+
 
 def read_directory(path: str):
     result = []
